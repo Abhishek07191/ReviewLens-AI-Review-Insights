@@ -50,6 +50,10 @@ export async function processUploadAnalyses(
     UPDATE analyses SET status = 'analysis_failed', error_message = ?, updated_at = ?
     WHERE review_hash = ?
   `);
+  const insertUsage = database.prepare(`
+    INSERT INTO api_usage_events (upload_id, review_hash, purpose, api_calls, created_at)
+    VALUES (?, ?, 'analysis', ?, ?)
+  `);
   let aiCalls = 0;
   let analysisFailures = 0;
 
@@ -58,6 +62,9 @@ export async function processUploadAnalyses(
       try {
         const result = await analyzer.analyze(review.reviewText);
         aiCalls += result.apiCalls;
+        if (result.apiCalls > 0) {
+          insertUsage.run(upload.uploadId, review.normalizedHash, result.apiCalls, new Date().toISOString());
+        }
         updateCompleted.run(
           result.analysis.sentiment,
           JSON.stringify(result.analysis.topics),
@@ -69,6 +76,9 @@ export async function processUploadAnalyses(
       } catch (error) {
         if (error instanceof AnalysisFailedError) {
           aiCalls += error.apiCalls;
+          if (error.apiCalls > 0) {
+            insertUsage.run(upload.uploadId, review.normalizedHash, error.apiCalls, new Date().toISOString());
+          }
         }
         analysisFailures += 1;
         updateFailed.run(

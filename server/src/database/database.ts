@@ -58,9 +58,19 @@ export function createDatabase(databasePath = process.env.SQLITE_PATH ?? './data
       UNIQUE(upload_id, row_number)
     );
 
+    CREATE TABLE IF NOT EXISTS api_usage_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      upload_id TEXT NOT NULL REFERENCES uploads(id) ON DELETE CASCADE,
+      review_hash TEXT NOT NULL REFERENCES analyses(review_hash),
+      purpose TEXT NOT NULL CHECK (purpose IN ('analysis', 'reply_suggestion')),
+      api_calls INTEGER NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS reviews_upload_id_idx ON reviews(upload_id);
     CREATE INDEX IF NOT EXISTS reviews_product_idx ON reviews(product);
     CREATE INDEX IF NOT EXISTS reviews_review_hash_idx ON reviews(review_hash);
+    CREATE INDEX IF NOT EXISTS usage_events_upload_id_idx ON api_usage_events(upload_id);
   `);
 
   return database;

@@ -1,6 +1,7 @@
 import type { ErrorRequestHandler } from 'express';
 import multer from 'multer';
 import { CsvInputError } from '../services/csv.service.js';
+import { ReplyGenerationError } from '../services/reply.service.js';
 
 export class HttpError extends Error {
   constructor(
@@ -20,6 +21,12 @@ export const errorHandler: ErrorRequestHandler = (error: unknown, _request, resp
 
   if (error instanceof HttpError) {
     response.status(error.statusCode).json({ error: error.message });
+    return;
+  }
+
+  if (error instanceof ReplyGenerationError) {
+    console.error('Reply suggestion failed:', error.message);
+    response.status(502).json({ error: 'The suggested reply could not be generated. Try again later.' });
     return;
   }
 

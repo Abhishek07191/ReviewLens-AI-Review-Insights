@@ -25,7 +25,7 @@ export function createApp(options: AppOptions = {}) {
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/api/health', (_request, response) => {
-    response.json({ status: 'ok' });
+    response.json({ status: 'ok', aiConfigured: analyzer.isConfigured });
   });
 
   app.get('/api/dashboard', createDashboardController(database));

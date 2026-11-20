@@ -1419,6 +1419,20 @@ button:disabled {
   font-weight: 600;
 }
 
+.settings-value-ok {
+  color: #268461 !important;
+}
+
+.settings-value-warning {
+  color: #bc7c25 !important;
+}
+
+.settings-health-error {
+  margin: 8px 0 0;
+  color: #b45554;
+  font-size: 9px;
+}
+
 .settings-info-row code,
 .settings-note code {
   padding: 2px 4px;

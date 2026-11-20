@@ -92,8 +92,17 @@ describe('dashboard and review APIs', () => {
 
   it('returns an empty, non-fabricated dashboard before the first upload', async () => {
     database = createDatabase(':memory:');
-    const response = await request(createApp({ database })).get('/api/dashboard');
+    const app = createApp({
+      database,
+      analyzer: {
+        isConfigured: false,
+        analyze: async () => { throw new Error('A missing key must not call the model'); },
+      },
+    });
+    const health = await request(app).get('/api/health');
+    const response = await request(app).get('/api/dashboard');
 
+    expect(health.body).toEqual({ status: 'ok', aiConfigured: false });
     expect(response.body.totalReviewsAnalysed).toBe(0);
     expect(response.body.totalReviewsUploaded).toBe(0);
     expect(response.body.sentimentDistribution).toEqual([

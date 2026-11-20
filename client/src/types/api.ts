@@ -82,3 +82,8 @@ export interface UploadResponse {
   analysisFailures: number
   processingDurationMs: number
 }
+
+export interface HealthResponse {
+  status: 'ok'
+  aiConfigured: boolean
+}

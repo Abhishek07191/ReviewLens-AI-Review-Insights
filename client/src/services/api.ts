@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type {
   DashboardData,
+  HealthResponse,
   ReviewFilters,
   ReviewsResponse,
   UploadResponse,
@@ -10,6 +11,11 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api',
   timeout: 20_000,
 })
+
+export async function fetchHealth(): Promise<HealthResponse> {
+  const { data } = await api.get<HealthResponse>('/health')
+  return data
+}
 
 export async function fetchDashboard(): Promise<DashboardData> {
   const { data } = await api.get<DashboardData>('/dashboard')

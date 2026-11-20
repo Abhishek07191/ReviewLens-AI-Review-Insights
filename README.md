@@ -145,7 +145,7 @@ Reply generation uses a separate, click-triggered request and system instruction
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/health` | API health check |
+| `GET` | `/api/health` | API health check and non-secret Gemini-key-configured status |
 | `GET` | `/api/dashboard` | Latest-upload analytics and usage stats |
 | `GET` | `/api/reviews` | Latest-upload reviews; optional `product`, `sentiment`, `topic`, `limit`, `offset` |
 | `POST` | `/api/reviews/upload` | Validate, persist, deduplicate, and analyze a CSV upload |

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { fetchDashboard, fetchReviews, getApiErrorMessage, uploadReviews } from '../services/api'
+import type { UploadProgressHandler } from '../services/api'
 import type {
   DashboardData,
   ReviewFilters,
@@ -85,11 +86,14 @@ export function useReviewInsights() {
     return () => { active = false }
   }, [filters])
 
-  const importFile = useCallback(async (file: File): Promise<UploadResponse | null> => {
+  const importFile = useCallback(async (
+    file: File,
+    onProgress?: UploadProgressHandler,
+  ): Promise<UploadResponse> => {
     setUploading(true)
     setError('')
     try {
-      const result = await uploadReviews(file)
+      const result = await uploadReviews(file, onProgress)
       const [dashboardData, reviews] = await Promise.all([
         fetchDashboard(),
         fetchReviews(filters),
@@ -99,7 +103,7 @@ export function useReviewInsights() {
       return result
     } catch (requestError) {
       setError(getApiErrorMessage(requestError))
-      return null
+      throw requestError
     } finally {
       setUploading(false)
     }

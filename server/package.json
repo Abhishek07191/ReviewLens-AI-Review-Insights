@@ -10,12 +10,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
     "better-sqlite3": "^12.5.0",
     "cors": "^2.8.5",
     "csv-parse": "^7.0.3",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "groq-sdk": "^1.6.0",
     "multer": "^2.0.2",
     "sanitize-html": "^2.18.2",
     "zod": "^4.1.12"

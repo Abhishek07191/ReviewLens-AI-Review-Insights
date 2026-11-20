@@ -15,6 +15,7 @@ interface StoredReview {
   topicsJson: string | null;
   summary: string | null;
   needsReply: number | null;
+  analysisError: string | null;
 }
 
 export interface ReviewFilters {
@@ -85,7 +86,8 @@ function latestUploadReviews(database: Database.Database): StoredReview[] {
       a.sentiment,
       a.topics_json AS topicsJson,
       a.summary,
-      a.needs_reply AS needsReply
+      a.needs_reply AS needsReply,
+      a.error_message AS analysisError
     FROM reviews r
     JOIN analyses a ON a.review_hash = r.review_hash
     WHERE r.upload_id = (SELECT id FROM uploads ORDER BY created_at DESC, rowid DESC LIMIT 1)
@@ -231,7 +233,8 @@ export function getReviews(
       a.sentiment,
       a.topics_json AS topicsJson,
       a.summary,
-      a.needs_reply AS needsReply
+      a.needs_reply AS needsReply,
+      a.error_message AS analysisError
     FROM reviews r
     JOIN analyses a ON a.review_hash = r.review_hash
     WHERE ${whereClause}

@@ -26,6 +26,7 @@ export interface Review {
   reviewText: string
   reviewHash: string
   analysisStatus: AnalysisStatus
+  analysisError: string | null
   analysis: ReviewAnalysis | null
 }
 

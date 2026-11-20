@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { AlertCircle, ArrowUpRight, Menu, RefreshCw, Upload } from 'lucide-react'
+import { AlertCircle, ArrowUpRight, Bell, Menu, RefreshCw, Upload } from 'lucide-react'
 import { Sidebar, type PageKey } from './components/Sidebar'
+import { DashboardSkeleton } from './components/DashboardSkeleton'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProductsPage } from './pages/ProductsPage'
 import { ReviewsPage } from './pages/ReviewsPage'
@@ -93,10 +94,24 @@ function App() {
             <button className="icon-button refresh-button" onClick={() => void refresh()} aria-label="Refresh insights">
               <RefreshCw size={17} />
             </button>
+            <button
+              className="icon-button notification-button"
+              onClick={() => setActivePage('reviews')}
+              aria-label={`Open reviews; ${dashboard.reviewsNeedingReply} need a reply`}
+              title={`${dashboard.reviewsNeedingReply} reviews need a reply`}
+            >
+              <Bell size={17} />
+              {dashboard.reviewsNeedingReply > 0 && (
+                <span className="notification-count">{dashboard.reviewsNeedingReply > 99 ? '99+' : dashboard.reviewsNeedingReply}</span>
+              )}
+            </button>
             <button className="button button-primary topbar-upload" onClick={navigateToUpload}>
               <Upload size={15} /> Upload reviews
             </button>
-            <span className="profile-avatar" aria-label="ReviewLens workspace">RL</span>
+            <div className="profile-section">
+              <span className="profile-avatar" aria-hidden="true">RL</span>
+              <span className="profile-copy"><strong>Store owner</strong><small>Workspace</small></span>
+            </div>
           </div>
         </header>
 
@@ -104,6 +119,9 @@ function App() {
           <div className="error-banner" role="alert">
             <AlertCircle size={17} />
             <span>{error}</span>
+            <button className="error-action" onClick={() => void refresh()}>
+              Retry <RefreshCw size={13} />
+            </button>
             <button className="error-dismiss" onClick={() => setError('')} aria-label="Dismiss error">×</button>
             {error.includes('API') && (
               <button className="error-action" onClick={() => setActivePage('settings')}>
@@ -113,9 +131,7 @@ function App() {
           </div>
         )}
 
-        {loading ? (
-          <div className="loading-state"><span className="loading-spinner" /> Loading your insights…</div>
-        ) : pageContent()}
+        {loading ? <DashboardSkeleton /> : pageContent()}
 
         <footer className="app-footer">
           <span>ReviewLens <i>·</i> Customer feedback, made clear.</span>

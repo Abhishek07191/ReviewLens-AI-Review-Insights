@@ -43,7 +43,7 @@ export function createReplyController(
         throw new HttpError(409, 'A reply can only be suggested for an analyzed review marked as needing a reply.');
       }
       if (!replySuggester.isConfigured) {
-        throw new HttpError(503, 'Gemini API key is not configured. Set GEMINI_API_KEY in the server environment.');
+        throw new HttpError(503, 'Groq API key is not configured. Set GROQ_API_KEY in the server environment.');
       }
 
       let generated: Awaited<ReturnType<ReplySuggester['suggest']>>;

@@ -22,7 +22,7 @@ describe('processUploadAnalyses', () => {
     database = undefined;
   });
 
-  it('limits concurrent model calls to batches of five', async () => {
+  it('limits concurrent model calls to batches of two', async () => {
     database = createDatabase(':memory:');
     const csvRows = ['review_id,product,rating,review_text'];
     for (let index = 1; index <= 12; index += 1) {
@@ -48,7 +48,7 @@ describe('processUploadAnalyses', () => {
     const result = await processUploadAnalyses(database, savedUpload, analyzer);
 
     expect(calls).toBe(12);
-    expect(maximumConcurrentCalls).toBe(5);
+    expect(maximumConcurrentCalls).toBe(2);
     expect(result.aiCalls).toBe(12);
     expect(result.reviews.every(({ analysisStatus }) => analysisStatus === 'completed')).toBe(true);
   });
@@ -60,7 +60,8 @@ describe('processUploadAnalyses', () => {
     ));
     const analyzer: ReviewAnalyzer = {
       isConfigured: true,
-      analyze: async () => {
+      analyze: async (_reviewText, rating) => {
+        expect(rating).toBe(1);
         throw new AnalysisFailedError('Invalid model output', 2);
       },
     };
@@ -70,5 +71,29 @@ describe('processUploadAnalyses', () => {
     expect(result.analysisFailures).toBe(1);
     expect(result.aiCalls).toBe(2);
     expect(result.reviews[0]?.analysisStatus).toBe('analysis_failed');
+    expect(result.reviews[0]?.analysisError).toBe('request_error after 2 API calls.');
+  });
+
+  it('continues processing the upload when one review fails', async () => {
+    database = createDatabase(':memory:');
+    const savedUpload = saveUpload(database, 'reviews.csv', cleanReviewCsv([
+      'review_id,product,rating,review_text',
+      'R1,Phone,1,"The screen stopped working"',
+      'R2,Phone,5,"The camera works perfectly"',
+    ].join('\n')));
+    const analyzer: ReviewAnalyzer = {
+      isConfigured: true,
+      analyze: async (reviewText) => {
+        if (reviewText === 'The screen stopped working') {
+          throw new AnalysisFailedError('Invalid model output', 2);
+        }
+        return { analysis, apiCalls: 1 };
+      },
+    };
+
+    const result = await processUploadAnalyses(database, savedUpload, analyzer);
+
+    expect(result.analysisFailures).toBe(1);
+    expect(result.reviews.map(({ analysisStatus }) => analysisStatus)).toEqual(['analysis_failed', 'completed']);
   });
 });

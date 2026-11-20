@@ -16,12 +16,24 @@ interface AppOptions {
 
 export function createApp(options: AppOptions = {}) {
   const app = express();
-  const allowedOrigin = process.env.CLIENT_ORIGIN ?? 'http://localhost:5173';
+  const configuredOrigins = (process.env.CLIENT_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const developmentOrigins = process.env.NODE_ENV === 'production'
+    ? []
+    : [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'http://localhost:5174',
+        'http://127.0.0.1:5174',
+      ];
+  const allowedOrigins = [...new Set([...configuredOrigins, ...developmentOrigins])];
   const database = options.database ?? createDatabase();
   const analyzer = options.analyzer ?? createReviewAnalyzer();
   const replySuggester = options.replySuggester ?? createReplySuggester();
 
-  app.use(cors({ origin: allowedOrigin }));
+  app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : false }));
   app.use(express.json({ limit: '1mb' }));
 
   app.get('/api/health', (_request, response) => {

@@ -31,7 +31,7 @@ export function SettingsPage() {
       <section className="panel settings-panel">
         <div className="settings-section-heading">
           <div className="settings-icon"><KeyRound size={18} /></div>
-          <div><h3>AI provider</h3><p>Gemini powers review analysis and suggested replies.</p></div>
+          <div><h3>AI provider</h3><p>Groq powers review analysis and suggested replies.</p></div>
           <span className="settings-badge"><LockKeyhole size={13} /> Server-side only</span>
         </div>
         <div className="settings-info-row">
@@ -47,7 +47,7 @@ export function SettingsPage() {
         {healthError && <p className="settings-health-error">{healthError}</p>}
         <div className="settings-info-row">
           <span>Configuration</span>
-          <strong>Set <code>GEMINI_API_KEY</code> in the server environment</strong>
+          <strong>Set <code>GROQ_API_KEY</code> in the server environment</strong>
         </div>
         <p className="settings-note">
           The API key is never sent to or stored in the browser. Add it to the server environment or your local
@@ -68,7 +68,7 @@ export function SettingsPage() {
           <span>Analysis cache</span>
           <strong>Persistent SHA-256 text hash</strong>
         </div>
-        <p className="settings-note"><ShieldCheck size={15} /> Review text is sent to Gemini only when it is not already cached.</p>
+        <p className="settings-note"><ShieldCheck size={15} /> Review text is sent to Groq only when it is not already cached.</p>
       </section>
     </div>
   )

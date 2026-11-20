@@ -28,4 +28,5 @@ export interface ReviewAnalysis {
 export interface UploadedReview extends CleanReview {
   analysisStatus: AnalysisStatus;
   analysis: ReviewAnalysis | null;
+  analysisError: string | null;
 }

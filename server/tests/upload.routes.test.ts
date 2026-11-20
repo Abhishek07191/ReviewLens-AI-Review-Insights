@@ -80,7 +80,7 @@ describe('POST /api/reviews/upload', () => {
     expect(response.body.error).toContain('Only CSV files are supported');
   });
 
-  it('returns a clear configuration error when the Gemini key is missing', async () => {
+  it('returns a clear configuration error when the Groq key is missing', async () => {
     database = createDatabase(':memory:');
 
     const response = await request(createApp({
@@ -94,6 +94,6 @@ describe('POST /api/reviews/upload', () => {
       });
 
     expect(response.status).toBe(503);
-    expect(response.body.error).toContain('GEMINI_API_KEY');
+    expect(response.body.error).toContain('GROQ_API_KEY');
   });
 });

@@ -9,6 +9,7 @@ interface AnalysisRow {
   topics_json: string | null;
   summary: string | null;
   needs_reply: number | null;
+  error_message: string | null;
 }
 
 export interface UploadResult {
@@ -37,6 +38,7 @@ function hydrateReview(review: CleanReview, analysisRow: AnalysisRow): UploadedR
     ...review,
     analysisStatus: analysisRow.status,
     analysis,
+    analysisError: analysisRow.error_message,
   };
 }
 
@@ -56,7 +58,7 @@ export function saveUpload(
     ON CONFLICT(review_hash) DO NOTHING
   `);
   const findAnalysis = database.prepare(`
-    SELECT status, sentiment, topics_json, summary, needs_reply
+    SELECT status, sentiment, topics_json, summary, needs_reply, error_message
     FROM analyses WHERE review_hash = ?
   `);
   const insertUpload = database.prepare(`

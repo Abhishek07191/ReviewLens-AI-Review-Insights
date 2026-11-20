@@ -3,7 +3,7 @@ import type { CleanReview, ReviewAnalysis } from '../types/review.js';
 import { AnalysisFailedError, type ReviewAnalyzer } from './analysis.service.js';
 import type { UploadResult } from './upload.service.js';
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 2;
 
 interface AnalysisRow {
   status: 'pending' | 'completed' | 'analysis_failed';
@@ -11,6 +11,7 @@ interface AnalysisRow {
   topics_json: string | null;
   summary: string | null;
   needs_reply: number | null;
+  error_message: string | null;
 }
 
 export interface ProcessedUpload extends UploadResult {
@@ -47,7 +48,9 @@ export async function processUploadAnalyses(
     WHERE review_hash = ?
   `);
   const updateFailed = database.prepare(`
-    UPDATE analyses SET status = 'analysis_failed', error_message = ?, updated_at = ?
+    UPDATE analyses
+    SET status = 'analysis_failed', sentiment = NULL, topics_json = NULL, summary = NULL,
+        needs_reply = NULL, error_message = ?, updated_at = ?
     WHERE review_hash = ?
   `);
   const insertUsage = database.prepare(`
@@ -60,7 +63,7 @@ export async function processUploadAnalyses(
   for (const batch of chunks([...uniqueReviews.values()], BATCH_SIZE)) {
     await Promise.all(batch.map(async (review) => {
       try {
-        const result = await analyzer.analyze(review.reviewText);
+        const result = await analyzer.analyze(review.reviewText, review.rating);
         aiCalls += result.apiCalls;
         if (result.apiCalls > 0) {
           insertUsage.run(upload.uploadId, review.normalizedHash, result.apiCalls, new Date().toISOString());
@@ -81,8 +84,11 @@ export async function processUploadAnalyses(
           }
         }
         analysisFailures += 1;
+        const failureMessage = error instanceof AnalysisFailedError
+          ? `${error.failureReason}${error.httpStatus === undefined ? '' : ` (HTTP ${error.httpStatus})`} after ${error.apiCalls} API call${error.apiCalls === 1 ? '' : 's'}.`
+          : 'unexpected_analysis_error';
         updateFailed.run(
-          'Analysis did not produce a valid response after bounded retries.',
+          failureMessage,
           new Date().toISOString(),
           review.normalizedHash,
         );
@@ -98,7 +104,7 @@ export async function processUploadAnalyses(
   `).run(aiCalls, processingDurationMs, upload.uploadId);
 
   const findAnalysis = database.prepare(`
-    SELECT status, sentiment, topics_json, summary, needs_reply
+    SELECT status, sentiment, topics_json, summary, needs_reply, error_message
     FROM analyses WHERE review_hash = ?
   `);
   const reviews = upload.reviews.map((review) => {
@@ -106,6 +112,7 @@ export async function processUploadAnalyses(
     return {
       ...review,
       analysisStatus: row.status,
+      analysisError: row.error_message,
       analysis: row.status === 'completed'
         ? {
             sentiment: row.sentiment!,

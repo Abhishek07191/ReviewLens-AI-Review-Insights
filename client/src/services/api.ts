@@ -30,11 +30,21 @@ export async function fetchReviews(filters: ReviewFilters): Promise<ReviewsRespo
   return data
 }
 
-export async function uploadReviews(file: File): Promise<UploadResponse> {
+export type UploadProgressHandler = (percentage: number) => void
+
+export async function uploadReviews(
+  file: File,
+  onProgress?: UploadProgressHandler,
+): Promise<UploadResponse> {
   const formData = new FormData()
   formData.append('file', file)
   const { data } = await api.post<UploadResponse>('/reviews/upload', formData, {
     timeout: 300_000,
+    onUploadProgress: ({ loaded, total }) => {
+      if (total && onProgress) {
+        onProgress(Math.min(100, Math.round((loaded / total) * 100)))
+      }
+    },
   })
   return data
 }

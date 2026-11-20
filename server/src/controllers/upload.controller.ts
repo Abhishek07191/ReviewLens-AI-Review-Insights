@@ -16,7 +16,7 @@ export function createUploadController(
         throw new HttpError(400, 'Upload a CSV file using the "file" field.');
       }
       if (!analyzer.isConfigured) {
-        throw new HttpError(503, 'Gemini API key is not configured. Set GEMINI_API_KEY in the server environment.');
+        throw new HttpError(503, 'Groq API key is not configured. Set GROQ_API_KEY in the server environment.');
       }
 
       const cleaned = cleanReviewCsv(request.file.buffer.toString('utf8'));

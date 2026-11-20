@@ -65,6 +65,7 @@ function ReviewRow({ review }: { review: Review }) {
             {review.rating === null ? '—' : `${review.rating} / 5`}
           </span>
         </td>
+        <td className="review-text-cell">{review.reviewText || <span className="muted-cell">No review text</span>}</td>
         <td>
           {analysis ? <SentimentBadge sentiment={analysis.sentiment} /> : (
             <span className={`analysis-status status-${review.analysisStatus}`}>
@@ -84,24 +85,29 @@ function ReviewRow({ review }: { review: Review }) {
         <td className="summary-cell">
           {analysis?.summary ?? (
             <span className={review.analysisStatus === 'analysis_failed' ? 'failed-summary' : 'muted-cell'}>
-              {review.analysisStatus === 'analysis_failed' ? 'Analysis could not be completed.' : 'Waiting for analysis'}
+              {review.analysisStatus === 'analysis_failed'
+                ? review.analysisError ?? 'Analysis could not be completed.'
+                : 'Waiting for analysis'}
             </span>
           )}
+        </td>
+        <td>
+          {analysis
+            ? <span className={`reply-status ${analysis.needs_reply ? 'reply-status-needed' : ''}`}>{analysis.needs_reply ? 'Needed' : 'Not needed'}</span>
+            : <span className="muted-cell">—</span>}
         </td>
         <td>
           {analysis?.needs_reply ? (
             <button className="reply-button" onClick={() => void createSuggestion()} disabled={loading}>
               {loading ? <LoaderCircle size={14} className="spin" /> : <MessageSquareText size={14} />}
-              {suggestion ? 'Regenerate' : 'Suggest reply'}
+              {suggestion ? 'Generate again' : 'Generate reply'}
             </button>
-          ) : analysis ? (
-            <span className="reply-not-needed">Not needed</span>
           ) : <span className="muted-cell">—</span>}
         </td>
       </tr>
       {(suggestion || replyError) && (
         <tr className="suggestion-row">
-          <td colSpan={7}>
+          <td colSpan={9}>
             {suggestion && (
               <div className="suggestion-card">
                 <div className="suggestion-heading">
@@ -172,16 +178,18 @@ export function ReviewsTable({ reviews, filters, products = [], onFiltersChange 
               <th>Review ID</th>
               <th>Product</th>
               <th>Rating</th>
+              <th>Review text</th>
               <th>Sentiment</th>
               <th>Topics</th>
               <th>AI summary</th>
-              <th>Reply</th>
+              <th>Needs reply</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {reviews.length === 0 ? (
               <tr>
-                <td colSpan={7} className="table-empty">
+                <td colSpan={9} className="table-empty">
                   <div className="table-empty-icon"><MessageSquareText size={19} /></div>
                   <strong>No reviews to show</strong>
                   <span>Upload a CSV or adjust the filters to see review insights.</span>

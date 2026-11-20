@@ -16,6 +16,7 @@ import { TopicHighlights } from '../components/TopicHighlights'
 import { UploadDropzone } from '../components/UploadDropzone'
 import type { DashboardData, Review } from '../types/api'
 import type { UploadResponse } from '../types/api'
+import type { UploadProgressHandler } from '../services/api'
 
 const SentimentChart = lazy(async () => {
   const module = await import('../components/SentimentCharts')
@@ -30,7 +31,7 @@ interface OverviewPageProps {
   dashboard: DashboardData
   reviews: Review[]
   uploading: boolean
-  onUpload: (file: File) => Promise<UploadResponse | null>
+  onUpload: (file: File, onProgress?: UploadProgressHandler) => Promise<UploadResponse>
   onViewReviews: () => void
 }
 

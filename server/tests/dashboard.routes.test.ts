@@ -4,7 +4,7 @@ import type Database from 'better-sqlite3';
 import { createApp } from '../src/app.js';
 import { createDatabase } from '../src/database/database.js';
 import type { ReviewAnalysis } from '../src/types/review.js';
-import type { ReviewAnalyzer } from '../src/services/analysis.service.js';
+import { AnalysisFailedError, type ReviewAnalyzer } from '../src/services/analysis.service.js';
 import type { ReplySuggester } from '../src/services/reply.service.js';
 
 describe('dashboard and review APIs', () => {
@@ -110,5 +110,85 @@ describe('dashboard and review APIs', () => {
       { sentiment: 'neutral', count: 0 },
       { sentiment: 'negative', count: 0 },
     ]);
+  });
+
+  it('surfaces a sanitized reason when an individual analysis fails', async () => {
+    database = createDatabase(':memory:');
+    const analyzer: ReviewAnalyzer = {
+      isConfigured: true,
+      analyze: async () => {
+        throw new AnalysisFailedError('Untrusted provider detail', 3, 'rate_limit', 429);
+      },
+    };
+    const app = createApp({ database, analyzer });
+    const upload = await request(app)
+      .post('/api/reviews/upload')
+      .attach('file', Buffer.from(
+        'review_id,product,rating,review_text\nR1,Phone,1,"The screen stopped working"',
+      ), { filename: 'reviews.csv', contentType: 'text/csv' });
+    const reviews = await request(app).get('/api/reviews');
+
+    expect(upload.status).toBe(201);
+    expect(upload.body.reviews[0]).toMatchObject({
+      analysisStatus: 'analysis_failed',
+      analysisError: 'rate_limit (HTTP 429) after 3 API calls.',
+      analysis: null,
+    });
+    expect(reviews.body.reviews[0].analysisError).toBe('rate_limit (HTTP 429) after 3 API calls.');
+    expect(JSON.stringify(reviews.body)).not.toContain('Untrusted provider detail');
+  });
+
+  it('allows the configured 127.0.0.1:5174 development frontend through CORS', async () => {
+    database = createDatabase(':memory:');
+    const app = createApp({
+      database,
+      analyzer: {
+        isConfigured: false,
+        analyze: async () => { throw new Error('The model must not be called for a health check'); },
+      },
+    });
+
+    const response = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://127.0.0.1:5174');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['access-control-allow-origin']).toBe('http://127.0.0.1:5174');
+  });
+
+  it('returns a clear configuration error for reply suggestions without a Groq key', async () => {
+    database = createDatabase(':memory:');
+    const analyzer: ReviewAnalyzer = {
+      isConfigured: true,
+      analyze: async () => ({
+        analysis: {
+          sentiment: 'negative',
+          topics: ['quality'],
+          summary: 'The product stopped working.',
+          needs_reply: true,
+        },
+        apiCalls: 1,
+      }),
+    };
+    const replySuggester: ReplySuggester = {
+      isConfigured: false,
+      suggest: async () => {
+        throw new Error('The reply model must not be called when unconfigured.');
+      },
+    };
+    const app = createApp({ database, analyzer, replySuggester });
+    const upload = await request(app)
+      .post('/api/reviews/upload')
+      .attach('file', Buffer.from(
+        'review_id,product,rating,review_text\nR1,Phone,1,"The product stopped working"',
+      ), { filename: 'reviews.csv', contentType: 'text/csv' });
+
+    expect(upload.status).toBe(201);
+    const reviews = await request(app).get('/api/reviews');
+    const recordId = reviews.body.reviews[0].recordId as number;
+    const suggestion = await request(app).post(`/api/reviews/${recordId}/reply-suggestion`);
+
+    expect(suggestion.status).toBe(503);
+    expect(suggestion.body.error).toContain('GROQ_API_KEY');
   });
 });
